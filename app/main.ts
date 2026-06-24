@@ -13,6 +13,10 @@ const rl = createInterface({
 rl.prompt();
 
 rl.on('line', (command: string) => {
+  if (command.trim() === 'exit') {
+    rl.close();
+    return;
+  }
   outputCommand(command);
   rl.prompt();
 });
