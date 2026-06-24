@@ -1,6 +1,10 @@
 import { createInterface } from 'readline';
 
-function outputCommand(command: string): void {
+function outputLine(command: string): void {
+  console.log(`${command}`);
+}
+
+function outputNotFound(command: string): void {
   console.log(`${command}: command not found`);
 }
 
@@ -16,7 +20,10 @@ rl.on('line', (command: string) => {
   if (command.trim() === 'exit') {
     rl.close();
     return;
+  } else if (command.trim().split(' ')[0] === 'echo') {
+    outputLine(command.trim().split(' ').slice(1).join(' '));
+  } else {
+    outputNotFound(command);
   }
-  outputCommand(command);
   rl.prompt();
 });
