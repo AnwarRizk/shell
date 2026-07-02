@@ -3,7 +3,7 @@ import { existsSync, accessSync, constants } from 'fs';
 import path from 'path';
 import { spawnSync } from 'child_process';
 
-const builtins = ['echo', 'exit', 'type', 'pwd'];
+const builtins = ['echo', 'exit', 'type', 'pwd', 'cd'];
 
 function outputNotFound(command: string): void {
   console.log(`${command}: command not found`);
@@ -54,6 +54,24 @@ function handleType(args: string[]): void {
     console.log(`${command} is ${executable}`);
   } else {
     console.log(`${command}: not found`);
+  }
+}
+
+function handlePwd(): void {
+  console.log(process.cwd());
+}
+
+function handleCd(args: string[]) {
+  const target = args[0] || process.env.HOME;
+
+  if (!target) {
+    return;
+  }
+
+  try {
+    process.chdir(target);
+  } catch {
+    console.log(`cd: ${target}: No such file or directory`);
   }
 }
 
@@ -108,7 +126,11 @@ rl.on('line', (line: string) => {
       break;
 
     case 'pwd':
-      console.log(process.cwd());
+      handlePwd();
+      break;
+
+    case 'cd':
+      handleCd(args);
       break;
 
     default:
