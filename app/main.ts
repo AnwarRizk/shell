@@ -1,6 +1,7 @@
 import { createInterface } from 'readline';
 import { existsSync, accessSync, constants } from 'fs';
 import path from 'path';
+import { spawnSync } from 'child_process';
 
 const types = ['echo', 'exit', 'type'];
 
@@ -44,12 +45,13 @@ rl.prompt();
 
 rl.on('line', (command: string) => {
   const args = command.trim().split(' ');
-  if (args[0] === 'exit') {
+  const cmd = args[0];
+  if (cmd === 'exit') {
     rl.close();
     return;
-  } else if (args[0] === 'echo') {
+  } else if (cmd === 'echo') {
     outputLine(args.slice(1).join(' '));
-  } else if (args[0] === 'type') {
+  } else if (cmd === 'type') {
     const typeName = args[1];
 
     if (types.includes(typeName)) {
@@ -64,7 +66,15 @@ rl.on('line', (command: string) => {
       }
     }
   } else {
-    outputNotFound(command);
+    const executable = findExecutable(cmd);
+
+    if (executable) {
+      spawnSync(executable, args.slice(1), {
+        stdio: 'inherit',
+      });
+    } else {
+      outputNotFound(command);
+    }
   }
 
   rl.prompt();
