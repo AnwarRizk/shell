@@ -3,11 +3,7 @@ import { existsSync, accessSync, constants } from 'fs';
 import path from 'path';
 import { spawnSync } from 'child_process';
 
-const types = ['echo', 'exit', 'type'];
-
-function outputLine(command: string): void {
-  console.log(command);
-}
+const builtins = ['echo', 'exit', 'type'];
 
 function outputNotFound(command: string): void {
   console.log(`${command}: command not found`);
@@ -28,6 +24,7 @@ function findExecutable(command: string): string | null {
       accessSync(fullPath, constants.X_OK);
       return fullPath;
     } catch {
+      // File exists but isn't executable.
       continue;
     }
   }
@@ -35,6 +32,48 @@ function findExecutable(command: string): string | null {
   return null;
 }
 
+function handleEcho(args: string[]): void {
+  console.log(args.join(' '));
+}
+
+function handleType(args: string[]): void {
+  const command = args[0];
+
+  if (!command) {
+    return;
+  }
+
+  if (builtins.includes(command)) {
+    console.log(`${command} is a shell builtin`);
+    return;
+  }
+
+  const executable = findExecutable(command);
+
+  if (executable) {
+    console.log(`${command} is ${executable}`);
+  } else {
+    console.log(`${command}: not found`);
+  }
+}
+
+function executeExternal(command: string, args: string[]): void {
+  const executable = findExecutable(command);
+
+  if (!executable) {
+    outputNotFound(command);
+    return;
+  }
+
+  spawnSync(executable, args, {
+    // Inherit stdio to allow the child process to use the same input/output as the parent
+    stdio: 'inherit',
+    argv0: command, // Set the first argument to the command name
+  });
+}
+
+// *******************START OF THE SHELL*******************
+// Create a readline interface for user input
 const rl = createInterface({
   input: process.stdin,
   output: process.stdout,
@@ -43,38 +82,34 @@ const rl = createInterface({
 
 rl.prompt();
 
-rl.on('line', (command: string) => {
-  const args = command.trim().split(' ');
-  const cmd = args[0];
-  if (cmd === 'exit') {
-    rl.close();
+rl.on('line', (line: string) => {
+  const input = line.trim();
+
+  if (!input) {
+    rl.prompt();
     return;
-  } else if (cmd === 'echo') {
-    outputLine(args.slice(1).join(' '));
-  } else if (cmd === 'type') {
-    const typeName = args[1];
+  }
 
-    if (types.includes(typeName)) {
-      console.log(`${typeName} is a shell builtin`);
-    } else {
-      const executable = findExecutable(typeName);
+  const parts = input.split(' ');
+  const command = parts[0];
+  const args = parts.slice(1);
 
-      if (executable) {
-        console.log(`${typeName} is ${executable}`);
-      } else {
-        console.log(`${typeName}: not found`);
-      }
-    }
-  } else {
-    const executable = findExecutable(cmd);
+  switch (command) {
+    case 'exit':
+      rl.close();
+      return;
 
-    if (executable) {
-      spawnSync(executable, args.slice(1), {
-        stdio: 'inherit',
-      });
-    } else {
-      outputNotFound(command);
-    }
+    case 'echo':
+      handleEcho(args);
+      break;
+
+    case 'type':
+      handleType(args);
+      break;
+
+    default:
+      executeExternal(command, args);
+      break;
   }
 
   rl.prompt();
