@@ -107,6 +107,10 @@ rl.on('line', (line: string) => {
       handleType(args);
       break;
 
+    case 'pwd':
+      console.log(process.cwd());
+      break;
+
     default:
       executeExternal(command, args);
       break;
