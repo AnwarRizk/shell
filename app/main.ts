@@ -2,6 +2,7 @@ import { createInterface } from 'readline';
 import { existsSync, accessSync, constants } from 'fs';
 import path from 'path';
 import { spawnSync } from 'child_process';
+import { homedir } from 'os';
 
 const builtins = ['echo', 'exit', 'type', 'pwd', 'cd'];
 
@@ -62,10 +63,14 @@ function handlePwd(): void {
 }
 
 function handleCd(args: string[]) {
-  const target = args[0] || process.env.HOME;
+  let target = args[0];
 
   if (!target) {
     return;
+  }
+
+  if (target === '~') {
+    target = homedir();
   }
 
   try {
