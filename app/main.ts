@@ -3,7 +3,7 @@ import { existsSync, accessSync, constants } from 'fs';
 import path from 'path';
 import { spawnSync } from 'child_process';
 
-const builtins = ['echo', 'exit', 'type'];
+const builtins = ['echo', 'exit', 'type', 'pwd'];
 
 function outputNotFound(command: string): void {
   console.log(`${command}: command not found`);
