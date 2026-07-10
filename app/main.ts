@@ -26,7 +26,16 @@ function parseInput(input: string): ParsedCommand {
   let inSingleQuotes = false;
   let inDoubleQuotes = false;
 
-  for (const ch of input) {
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i];
+    if (ch === '\\' && !inSingleQuotes && !inDoubleQuotes) {
+      if (i + 1 < input.length) {
+        current += input[i + 1];
+        i++; // Skip the next character since it's escaped
+      }
+      continue;
+    }
+
     if (ch === "'" && !inDoubleQuotes) {
       inSingleQuotes = !inSingleQuotes;
       continue;
