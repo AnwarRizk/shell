@@ -6,6 +6,36 @@ import { homedir } from 'os';
 
 const builtins = ['echo', 'exit', 'type', 'pwd', 'cd'];
 
+function parseInput(input: string): string[] {
+  const args: string[] = [];
+
+  let current = '';
+  let inSingleQuotes = false;
+
+  for (const ch of input) {
+    if (ch === "'") {
+      inSingleQuotes = !inSingleQuotes;
+      continue;
+    }
+
+    if (ch === ' ' && !inSingleQuotes) {
+      if (current.length > 0) {
+        args.push(current);
+        current = '';
+      }
+      continue;
+    }
+
+    current += ch;
+  }
+
+  if (current.length > 0) {
+    args.push(current);
+  }
+
+  return args;
+}
+
 function outputNotFound(command: string): void {
   console.log(`${command}: command not found`);
 }
@@ -113,7 +143,8 @@ rl.on('line', (line: string) => {
     return;
   }
 
-  const parts = input.split(' ');
+  const parts = parseInput(input);
+  // console.log(parts);
   const command = parts[0];
   const args = parts.slice(1);
 
