@@ -4,23 +4,42 @@ import path from 'path';
 import { spawnSync } from 'child_process';
 import { homedir } from 'os';
 
-const builtins = ['echo', 'exit', 'type', 'pwd', 'cd'];
+const builtins = new Set(['echo', 'exit', 'type', 'pwd', 'cd']);
 
-function parseInput(input: string): string[] {
-  const args: string[] = [];
+const builtinHandlers = new Map<string, CommandHandler>([
+  ['echo', builtinEcho],
+  ['type', builtinType],
+  ['pwd', builtinPwd],
+  ['cd', builtinCd],
+]);
+
+type CommandHandler = (args: string[]) => void;
+interface ParsedCommand {
+  command: string;
+  args: string[];
+}
+
+function parseInput(input: string): ParsedCommand {
+  const tokens: string[] = [];
 
   let current = '';
   let inSingleQuotes = false;
+  let inDoubleQuotes = false;
 
   for (const ch of input) {
-    if (ch === "'") {
+    if (ch === "'" && !inDoubleQuotes) {
       inSingleQuotes = !inSingleQuotes;
       continue;
     }
 
-    if (ch === ' ' && !inSingleQuotes) {
+    if (ch === '"') {
+      inDoubleQuotes = !inDoubleQuotes;
+      continue;
+    }
+
+    if (ch === ' ' && !inSingleQuotes && !inDoubleQuotes) {
       if (current.length > 0) {
-        args.push(current);
+        tokens.push(current);
         current = '';
       }
       continue;
@@ -30,10 +49,13 @@ function parseInput(input: string): string[] {
   }
 
   if (current.length > 0) {
-    args.push(current);
+    tokens.push(current);
   }
 
-  return args;
+  return {
+    command: tokens[0],
+    args: tokens.slice(1),
+  };
 }
 
 function outputNotFound(command: string): void {
@@ -63,18 +85,18 @@ function findExecutable(command: string): string | null {
   return null;
 }
 
-function handleEcho(args: string[]): void {
+function builtinEcho(args: string[]): void {
   console.log(args.join(' '));
 }
 
-function handleType(args: string[]): void {
+function builtinType(args: string[]): void {
   const command = args[0];
 
   if (!command) {
     return;
   }
 
-  if (builtins.includes(command)) {
+  if (builtins.has(command)) {
     console.log(`${command} is a shell builtin`);
     return;
   }
@@ -88,11 +110,11 @@ function handleType(args: string[]): void {
   }
 }
 
-function handlePwd(): void {
+function builtinPwd(): void {
   console.log(process.cwd());
 }
 
-function handleCd(args: string[]) {
+function builtinCd(args: string[]) {
   let target = args[0];
 
   if (!target) {
@@ -110,7 +132,7 @@ function handleCd(args: string[]) {
   }
 }
 
-function executeExternal(command: string, args: string[]): void {
+function runExternalCommand(command: string, args: string[]): void {
   const executable = findExecutable(command);
 
   if (!executable) {
@@ -123,6 +145,18 @@ function executeExternal(command: string, args: string[]): void {
     stdio: 'inherit',
     argv0: command, // Set the first argument to the command name
   });
+}
+
+function execute(parsedCommand: ParsedCommand): void {
+  const handler = builtinHandlers.get(parsedCommand.command);
+  if (handler) {
+    handler(parsedCommand.args);
+  } else if (parsedCommand.command === 'exit') {
+    rl.close();
+    return;
+  } else {
+    runExternalCommand(parsedCommand.command, parsedCommand.args);
+  }
 }
 
 // *******************START OF THE SHELL*******************
@@ -143,36 +177,7 @@ rl.on('line', (line: string) => {
     return;
   }
 
-  const parts = parseInput(input);
-  // console.log(parts);
-  const command = parts[0];
-  const args = parts.slice(1);
-
-  switch (command) {
-    case 'exit':
-      rl.close();
-      return;
-
-    case 'echo':
-      handleEcho(args);
-      break;
-
-    case 'type':
-      handleType(args);
-      break;
-
-    case 'pwd':
-      handlePwd();
-      break;
-
-    case 'cd':
-      handleCd(args);
-      break;
-
-    default:
-      executeExternal(command, args);
-      break;
-  }
+  execute(parseInput(input));
 
   rl.prompt();
 });
