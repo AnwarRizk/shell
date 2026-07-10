@@ -151,9 +151,6 @@ function execute(parsedCommand: ParsedCommand): void {
   const handler = builtinHandlers.get(parsedCommand.command);
   if (handler) {
     handler(parsedCommand.args);
-  } else if (parsedCommand.command === 'exit') {
-    rl.close();
-    return;
   } else {
     runExternalCommand(parsedCommand.command, parsedCommand.args);
   }
@@ -174,6 +171,11 @@ rl.on('line', (line: string) => {
 
   if (!input) {
     rl.prompt();
+    return;
+  }
+
+  if (input === 'exit') {
+    rl.close();
     return;
   }
 
