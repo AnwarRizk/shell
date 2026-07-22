@@ -36,6 +36,19 @@ function parseInput(input: string): ParsedCommand {
       continue;
     }
 
+    if (ch === '\\' && inDoubleQuotes) {
+      if (i + 1 < input.length) {
+        const nextChar = input[i + 1];
+        if (nextChar === '"' || nextChar === '\\') {
+          current += nextChar;
+          i++; // Skip the next character since it's escaped
+        } else {
+          current += ch; // Keep the backslash if it's not escaping a quote or backslash
+        }
+      }
+      continue;
+    }
+
     if (ch === "'" && !inDoubleQuotes) {
       inSingleQuotes = !inSingleQuotes;
       continue;
