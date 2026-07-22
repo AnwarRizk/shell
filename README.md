@@ -2,6 +2,8 @@
 
 A POSIX-compliant shell implementation built in TypeScript as part of the [CodeCrafters "Build Your Own Shell" challenge](https://codecrafters.io/courses/shell/overview).
 
+[![progress-banner](https://backend.codecrafters.io/progress/shell/9f684632-a817-446c-9aad-6f3840b918b7)](https://app.codecrafters.io/users/AnwarRizk?r=2qF)
+
 ## Features
 
 - **REPL (Read-Eval-Print Loop)**: Interactive command-line interface with a `$` prompt
