@@ -41,7 +41,7 @@ function parseInput(input: string): ParsedCommand {
       continue;
     }
 
-    if (ch === '"') {
+    if (ch === '"' && !inSingleQuotes) {
       inDoubleQuotes = !inDoubleQuotes;
       continue;
     }
